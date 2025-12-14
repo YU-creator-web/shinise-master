@@ -29,6 +29,7 @@ export async function searchNearby(
   const requestBody = {
     includedTypes,
     maxResultCount: 20,
+    languageCode: "ja", // Ensures Japanese responses for displayName and formattedAddress
     locationRestriction: {
       circle: {
         center: { latitude: lat, longitude: lng },
@@ -73,6 +74,7 @@ export async function searchByText(
   const requestBody = {
     textQuery: query,
     maxResultCount: 20,
+    languageCode: "ja", // Ensures Japanese responses for displayName and formattedAddress
     locationBias: {
       circle: {
         center: { latitude: lat, longitude: lng },
@@ -128,7 +130,7 @@ export async function getPlaceDetails(placeId: string): Promise<any> {
   ].join(",");
 
   try {
-    const response = await fetch(`${url}?fields=${fields}&key=${API_KEY}`, {
+    const response = await fetch(`${url}?fields=${fields}&key=${API_KEY}&languageCode=ja`, {
       method: "GET", 
       headers: {
         "Content-Type": "application/json",

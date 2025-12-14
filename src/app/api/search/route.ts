@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { searchNearby, getPlaceDetails, searchByText } from "@/lib/places";
-import { generateOldShopScore, OldShopScoreResult } from "@/lib/vertex";
+import { generateOldShopScore, findShiniseCandidates, OldShopScoreResult } from "@/lib/vertex";
 
 export const runtime = "nodejs"; // Vertex AI Node SDK works best in Node runtime
 
@@ -13,6 +13,7 @@ export async function GET(request: NextRequest) {
   let targetLat = lat;
   let targetLng = lng;
   const station = searchParams.get("station");
+  const genre = searchParams.get("genre");
 
   // Geocoding if station is provided and lat/lng are missing
   if ((!targetLat || !targetLng) && station) {
@@ -33,28 +34,58 @@ export async function GET(request: NextRequest) {
     }
   }
   
-const genre = searchParams.get("genre");
-  
   if (!targetLat || !targetLng) {
     return NextResponse.json({ error: "Missing lat/lng or valid station" }, { status: 400 });
   }
 
   try {
-    // 1. Search Places
-    let places;
-    if (genre) {
-        places = await searchByText(genre, targetLat, targetLng, radius);
-    } else {
-        places = await searchNearby(targetLat, targetLng, radius);
+    let places: any[] = [];
+    let isAiSourced = false;
+
+    // 1. AI Discovery (Primary Strategy)
+    if (station) {
+        console.log(`🤖 Starting AI Candidate Search for ${station} (Genre: ${genre || 'Any'})...`);
+        const candidates = await findShiniseCandidates(station, genre || undefined);
+        
+        if (candidates.length > 0) {
+            console.log(`✅ AI found ${candidates.length} candidates:`, candidates);
+            isAiSourced = true;
+
+            // Hydrate candidates with Google Places Data
+            const hydratePromises = candidates.map(async (name) => {
+                // Search specifically for this shop near the station
+                const results = await searchByText(name, targetLat, targetLng, 2000); // 2km bias
+                return results.length > 0 ? results[0] : null;
+            });
+
+            const hydrated = await Promise.all(hydratePromises);
+            places = hydrated.filter((p) => p !== null);
+            console.log(`📍 Hydrated ${places.length} places from AI candidates.`);
+        } else {
+            console.warn("⚠️ AI returned no candidates, falling back to legacy search.");
+        }
+    }
+
+    // 2. Legacy Fallback (Secondary Strategy)
+    if (places.length === 0) {
+        console.log("🔍 Using Legacy Google Maps Search...");
+        if (genre) {
+            places = await searchByText(genre, targetLat, targetLng, radius);
+        } else {
+            places = await searchNearby(targetLat, targetLng, radius);
+        }
     }
 
     if (places.length === 0) {
       return NextResponse.json({ shops: [] });
     }
 
-    // 2. Score shops (Optimized: Score only top 5 for MVP performance)
-    const topPlaces = places.slice(0, 5);
-    const restPlaces = places.slice(5);
+    // 3. Score shops
+    // If AI sourced, we trust them more, so process up to 10.
+    // If legacy, keep to 5 for performance/relevance.
+    const limit = isAiSourced ? 10 : 5;
+    const topPlaces = places.slice(0, limit);
+    const restPlaces = places.slice(limit);
 
     const scoredShopsPromises = topPlaces.map(async (place) => {
       // Need details (reviews) for AI scoring
@@ -85,7 +116,7 @@ const genre = searchParams.get("genre");
 
     const scoredShops = await Promise.all(scoredShopsPromises);
 
-    // 3. Combine results
+    // 4. Combine results
     // For non-scored shops, return basic structure
     const unScoredShops = restPlaces.map(place => ({
       ...place,

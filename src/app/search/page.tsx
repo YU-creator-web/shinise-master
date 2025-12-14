@@ -13,6 +13,7 @@ interface Shop {
   aiAnalysis?: {
     score: number;
     short_summary: string;
+    founding_year: string;
   };
 }
 
@@ -59,8 +60,9 @@ function SearchResults() {
     <div className="min-h-screen bg-[#1a0f0a] text-[#FAFAFA] font-[family-name:var(--font-sans)] pb-20">
       <Header />
 
-      <div className="max-w-md mx-auto p-4">
-        <h2 className="text-xl mb-6 font-bold border-b border-[#D4AF37] inline-block pb-2 font-[family-name:var(--font-mincho)] text-white drop-shadow-[0_0_10px_rgba(212,175,55,0.3)]">
+      {/* Responsive container: full width with max, padding for breathing room */}
+      <div className="max-w-7xl mx-auto px-4 py-6">
+        <h2 className="text-xl md:text-2xl mb-6 font-bold border-b border-[#D4AF37] inline-block pb-2 font-[family-name:var(--font-mincho)] text-white drop-shadow-[0_0_10px_rgba(212,175,55,0.3)]">
           {station ? `${station} ` : '現在地'} 
           {genre ? `× ${genre}` : ''} 周辺の候補
         </h2>
@@ -78,7 +80,8 @@ function SearchResults() {
           <p className="text-center py-20 opacity-60">老舗が見つかりませんでした。</p>
         )}
 
-        <div className="space-y-6">
+        {/* Responsive Grid: 1 col on mobile, 2 on md, 3 on lg */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {!loading && shops.map((shop) => (
             <Card key={shop.id} className="cursor-pointer group bg-white/5 border border-white/10 backdrop-blur-sm overflow-hidden rounded-xl transition-all duration-300 hover:bg-white/10 hover:border-[#D4AF37]/50 hover:shadow-[0_0_20px_rgba(212,175,55,0.1)]" onClick={() => router.push(`/shop/${shop.id}`)}>
                 <div className="relative h-40 bg-black/50 overflow-hidden">
@@ -110,13 +113,19 @@ function SearchResults() {
                     <h3 className="text-lg font-bold mb-1 text-white group-hover:text-[#D4AF37] transition-colors font-[family-name:var(--font-mincho)]">
                         {shop.displayName.text}
                     </h3>
+                    {/* Founding Year */}
+                    {shop.aiAnalysis?.founding_year && (
+                        <p className="text-xs text-[#D4AF37] mb-2 font-semibold">
+                            🏛️ 創業：{shop.aiAnalysis.founding_year}
+                        </p>
+                    )}
                     <p className="text-xs text-gray-400 mb-4">{shop.formattedAddress}</p>
                     
                     {shop.aiAnalysis?.short_summary && shop.aiAnalysis.short_summary !== '-' && (
                         <div className="relative p-3 bg-[#D4AF37]/10 rounded-lg border border-[#D4AF37]/20">
                             <span className="absolute -top-2 left-2 px-1 bg-[#1a0f0a] text-[10px] text-[#D4AF37] border border-[#D4AF37]/30 rounded">AI 解説</span>
                             <p className="text-xs italic text-gray-300 leading-relaxed">
-                                “{shop.aiAnalysis.short_summary}”
+                                "{shop.aiAnalysis.short_summary}"
                             </p>
                         </div>
                     )}
