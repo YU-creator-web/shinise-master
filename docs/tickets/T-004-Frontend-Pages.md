@@ -1,7 +1,7 @@
 # Ticket: フロントエンド主要画面 (Search, List, Detail)
 
 **ID**: T-004-Frontend-Pages
-**Status**: ✅ 完了
+**Status**: Pending
 
 ## 目標 (Goal)
 「検索 → 結果一覧 → 詳細」のメインフローを実装し、3D要素でユーザー体験を高める。
