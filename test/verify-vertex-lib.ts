@@ -29,7 +29,7 @@ async function verify() {
   if (candidates.length === 0) return;
 
   // 2. Test Scoring (using the first candidate)
-  const shopName = candidates[0];
+  const shopName = candidates[0].name;
   console.log(`⚖️ Testing generateOldShopScore("${shopName}")...`);
   const scoreResult = await generateOldShopScore({
     name: shopName,
